@@ -1,116 +1,176 @@
 # Tableau Analytics Portfolio
 
-A curated collection of Tableau and business intelligence projects covering healthcare, customer analytics, media, and higher-education enrollment data.
+A curated collection of Tableau and business-intelligence projects spanning healthcare, customer analytics, media, and higher-education enrollment data.
 
-These projects demonstrate an end-to-end analytics workflow: defining business questions, preparing data, building analytical logic, designing interactive dashboards, and communicating insights to non-technical audiences.
+This repository is a **portfolio landing page**. The detailed technical methodology, equations, data logic, evaluation strategy, and limitations live in the individual project repositories linked below.
+
+## Portfolio Goal
+
+The purpose of this portfolio is to demonstrate a complete analytics workflow:
+
+```text
+Business / research question
+        ↓
+Define the analytical population
+        ↓
+Clean / reshape / engineer variables
+        ↓
+Choose metrics appropriate to the question
+        ↓
+Build Tableau calculations and views
+        ↓
+Validate KPI consistency
+        ↓
+Communicate interpretable results
+```
+
+The projects intentionally cover different analytical settings. Not every problem requires machine learning: some are best solved through cohort construction, aggregation, segmentation, or longitudinal visualization.
 
 ## Featured Projects
 
 ### 1. Flu Shot Analytics Dashboard
 
-**Focus:** Healthcare Analytics · SQL · Tableau
+**Domain:** Healthcare Analytics  
+**Tools:** SQL + Tableau
 
-Built a Tableau dashboard to analyze 2022 flu vaccination coverage among active patients. The project uses SQL to define the eligible patient cohort, identify flu-shot records, calculate patient age, and create a vaccination indicator for downstream visualization.
+**Problem:** Measure influenza-vaccination uptake among a consistently defined active-patient population and compare coverage across demographic and geographic groups.
 
-**Key analysis areas**
+The project builds a patient-level binary outcome
 
-- Overall vaccination coverage
-- Vaccination rate by age and race
-- County-level geographic patterns
-- Running total of vaccinations over time
-- Patient-level vaccination status
+$$
+Y_i=
+\begin{cases}
+1,&\text{patient }i\text{ received a qualifying 2022 flu shot},\\
+0,&\text{otherwise},
+\end{cases}
+$$
 
-**Skills:** SQL joins, CTEs, cohort definition, feature engineering, healthcare analytics, Tableau dashboards
+and computes coverage as
 
-- [View GitHub Project](https://github.com/ziqixu22/flu-shot-analytics)
-- [View Interactive Tableau Dashboard](https://public.tableau.com/app/profile/ziqi.xu6990/viz/FluShotsDashboard_17311271789370/Dashboard1)
+$$
+\widehat p=\frac{1}{N}\sum_{i=1}^{N}Y_i.
+$$
+
+A SQL `LEFT JOIN` is crucial because unvaccinated patients must remain in the denominator.
+
+**What it demonstrates:** cohort definition, CTEs, joins, feature engineering, KPI design, demographic segmentation, geographic reporting.
+
+- [GitHub Project](https://github.com/ziqixu22/flu-shot-analytics)
+- [Interactive Tableau Dashboard](https://public.tableau.com/app/profile/ziqi.xu6990/viz/FluShotsDashboard_17311271789370/Dashboard1)
 
 ---
 
 ### 2. Customer Sales Analytics Dashboard
 
-**Focus:** Business Intelligence · Customer Analytics · Tableau
+**Domain:** Business / Retail Analytics  
+**Tools:** Tableau
 
-Developed an interactive Tableau dashboard for exploring customer purchasing behavior and sales performance across products, customer segments, geography, discounts, and payment methods.
+**Problem:** Turn transaction-level sales data into an interpretable view of revenue concentration, customer segments, geography, time trends, and discount behavior.
 
-**Key analysis areas**
+Core revenue aggregation is
 
-- Customer and sales KPIs
-- Product-category performance
-- Geographic sales patterns
-- Payment-method behavior
-- Customer segmentation and purchasing patterns
+$$
+R_g=\sum_{i\in g}T_i,
+$$
 
-**Skills:** customer analytics, KPI design, sales analysis, segmentation, geographic visualization, Tableau
+with segment share
 
-- [View GitHub Project](https://github.com/ziqixu22/customer-sales-analytics)
-- [View Interactive Tableau Dashboard](https://public.tableau.com/views/Wisesalescustomeranalysis/CustomerAnalysis?:language=zh-CN&:sid=&:redirect=auth&:display_count=n&:origin=viz_share_link)
+$$
+\text{RevenueShare}_g=\frac{R_g}{\sum_h R_h}.
+$$
+
+The workbook includes total revenue, monthly revenue, age-wise sales, gender-wise sales, region-wise revenue share, state-level mapping, and a quantity-discount relationship view.
+
+**What it demonstrates:** BI design, KPI aggregation, customer segmentation, geographic analysis, demographic analysis, business storytelling.
+
+- [GitHub Project](https://github.com/ziqixu22/customer-sales-analytics)
+- [Interactive Tableau Dashboard](https://public.tableau.com/views/Wisesalescustomeranalysis/CustomerAnalysis?:language=zh-CN&:sid=&:redirect=auth&:display_count=n&:origin=viz_share_link)
 
 ---
 
 ### 3. Netflix Global Content Analysis
 
-**Focus:** Media Analytics · Geographic Visualization · Tableau
+**Domain:** Media Analytics  
+**Tools:** Tableau
 
-Explored the geographic and content composition of the Netflix catalog using an interactive Tableau dashboard. The project provides a visual way to compare catalog composition across countries and content categories.
+**Problem:** Make a large title-level catalog easier to understand by aggregating content geographically and by content type.
 
-**Key analysis areas**
+For country or segment $g$,
 
-- Country-level content distribution
-- Movies vs. TV shows
-- Release-year trends
-- Content-category patterns
-- Global catalog exploration
+$$
+N_g=\sum_i\mathbf{1}(i\in g),
+$$
 
-**Skills:** geographic visualization, categorical analysis, media analytics, dashboard design, Tableau
+with relative catalog share
 
-- [View GitHub Project](https://github.com/ziqixu22/netflix-global-content-analysis)
-- [View Interactive Tableau Dashboard](https://public.tableau.com/app/profile/ziqi.xu6990/viz/Netflixbycountry_17311283978990/Netflix)
+$$
+\text{Share}_g=\frac{N_g}{\sum_h N_h}.
+$$
+
+**What it demonstrates:** geographic visualization, categorical aggregation, content analysis, interactive exploration, communication of large-scale distribution patterns.
+
+- [GitHub Project](https://github.com/ziqixu22/netflix-global-content-analysis)
+- [Interactive Tableau Dashboard](https://public.tableau.com/app/profile/ziqi.xu6990/viz/Netflixbycountry_17311283978990/Netflix)
 
 ---
 
 ### 4. Illinois Enrollment Demographics Dashboard
 
-**Focus:** Education Analytics · Demographic Trends · Tableau
+**Domain:** Education / Institutional Analytics  
+**Tools:** Tableau
 
-Analyzed longitudinal enrollment patterns using publicly available institutional enrollment data. The Tableau workbook examines demographic composition and student-level trends across time.
+**Problem:** Distinguish absolute enrollment growth from changes in demographic composition over time.
 
-**Key analysis areas**
+For group $g$ in year $t$,
 
-- Enrollment trends over time
-- Race and ethnicity composition
-- Gender trends
-- Undergraduate enrollment percentages
-- Rank-order changes across demographic groups
+$$
+T_t=\sum_g X_{t,g}
+$$
 
-**Skills:** time-series visualization, demographic analysis, Tableau calculated fields, LOD expressions, percentage calculations, ranking
+and demographic share is
 
-- [View GitHub Project](https://github.com/ziqixu22/illinois-enrollment-demographics)
-- Public institutional enrollment statistics are available through [UIUC Data & Analytics for Institutional Research (DAIR)](https://dair.illinois.edu/access-data/student-enrollment/) and historical [UIUC DMI enrollment reports](https://dmi.illinois.edu/).
+$$
+S_{t,g}=\frac{X_{t,g}}{T_t}.
+$$
+
+The Tableau workbook implements the annual denominator with a FIXED LOD expression and uses counts, percentages, ranks, stacked areas, and gender trends to compare long-run changes.
+
+**What it demonstrates:** longitudinal analysis, LOD expressions, percentage-of-total logic, rank-order analysis, demographic visualization.
+
+- [GitHub Project](https://github.com/ziqixu22/illinois-enrollment-demographics)
 
 ---
 
-## Portfolio Summary
+## Why the Evaluation Approach Differs by Project
 
-| Project | Domain | Main Tools | Core Skills |
-|---|---|---|---|
-| Flu Shot Analytics | Healthcare | SQL, Tableau | Cohort analysis, CTEs, joins, KPI visualization |
-| Customer Sales Analytics | Business / Retail | Tableau | Customer segmentation, sales KPIs, geographic analysis |
-| Netflix Global Content Analysis | Media | Tableau | Geographic visualization, categorical analysis |
-| Illinois Enrollment Demographics | Education | Tableau | Trend analysis, LOD calculations, demographic visualization |
+These are primarily analytics / BI projects rather than supervised machine-learning benchmarks. Therefore, evaluation emphasizes **data and KPI validity** rather than forcing inappropriate metrics such as RMSE or classification accuracy.
 
-## Tools & Skills
+Typical checks include:
 
-- Tableau
-- SQL
-- Dashboard design
-- Business intelligence
-- Exploratory data analysis
-- KPI development
-- Geographic visualization
-- Time-series visualization
-- Data storytelling
+- denominators remain consistent across dashboard views
+- totals reconcile across mutually exclusive groups
+- shares remain in $[0,1]$
+- cumulative metrics are monotonic where expected
+- filters operate on the intended analytical population
+- multi-membership dimensions are not incorrectly treated as mutually exclusive
 
-## About This Portfolio
+This distinction matters in interviews: the evaluation method should match the analytical objective.
 
-The four projects remain in separate repositories so that each analysis can be reviewed independently. This repository serves as a single landing page for the Tableau / BI portion of my broader analytics portfolio.
+## Portfolio Comparison
+
+| Project | Main Question | Data Grain | Core Method | Evaluation |
+|---|---|---|---|---|
+| Flu Shot Analytics | Who received a flu shot, and how does uptake vary? | Patient | SQL cohort + binary KPI | Cohort / denominator consistency |
+| Customer Sales Analytics | Where does revenue come from? | Transaction | Aggregation + segmentation | KPI reconciliation |
+| Netflix Global Content | How is catalog content distributed? | Title | Geographic / categorical aggregation | Count / share consistency |
+| Illinois Enrollment | How has demographic composition changed? | Year × group | LOD + longitudinal analysis | Annual total / share reconciliation |
+
+## Skills Demonstrated
+
+Tableau · SQL · Business Intelligence · KPI Design · Cohort Analysis · Customer Segmentation · Geographic Visualization · Longitudinal Analysis · LOD Expressions · Data Storytelling
+
+## Repository Philosophy
+
+The individual repositories are intentionally kept separate so that each project can be reviewed as a self-contained case study. This landing page provides the high-level map; the linked repositories provide the technical depth.
+
+Where exact numerical outcomes cannot be verified from plain-text repository artifacts, the project READMEs explicitly avoid inventing results and direct the reader to the Tableau workbook as the visual source of truth.
