@@ -22,7 +22,7 @@ Built a Tableau dashboard to analyze 2022 flu vaccination coverage among active 
 
 **Skills:** SQL joins, CTEs, cohort definition, feature engineering, healthcare analytics, Tableau dashboards
 
-- [View GitHub Project](https://github.com/ziqixu22/Flu-shots)
+- [View GitHub Project](https://github.com/ziqixu22/flu-shot-analytics)
 - [View Interactive Tableau Dashboard](https://public.tableau.com/app/profile/ziqi.xu6990/viz/FluShotsDashboard_17311271789370/Dashboard1)
 
 ---
@@ -43,7 +43,7 @@ Developed an interactive Tableau dashboard for exploring customer purchasing beh
 
 **Skills:** customer analytics, KPI design, sales analysis, segmentation, geographic visualization, Tableau
 
-- [View GitHub Project](https://github.com/ziqixu22/Customer-analysis)
+- [View GitHub Project](https://github.com/ziqixu22/customer-sales-analytics)
 - [View Interactive Tableau Dashboard](https://public.tableau.com/views/Wisesalescustomeranalysis/CustomerAnalysis?:language=zh-CN&:sid=&:redirect=auth&:display_count=n&:origin=viz_share_link)
 
 ---
@@ -64,7 +64,7 @@ Explored the geographic and content composition of the Netflix catalog using an 
 
 **Skills:** geographic visualization, categorical analysis, media analytics, dashboard design, Tableau
 
-- [View GitHub Project](https://github.com/ziqixu22/Netflix-by-country)
+- [View GitHub Project](https://github.com/ziqixu22/netflix-global-content-analysis)
 - [View Interactive Tableau Dashboard](https://public.tableau.com/app/profile/ziqi.xu6990/viz/Netflixbycountry_17311283978990/Netflix)
 
 ---
@@ -85,7 +85,7 @@ Analyzed longitudinal enrollment patterns using publicly available institutional
 
 **Skills:** time-series visualization, demographic analysis, Tableau calculated fields, LOD expressions, percentage calculations, ranking
 
-- [View GitHub Project](https://github.com/ziqixu22/atlas)
+- [View GitHub Project](https://github.com/ziqixu22/illinois-enrollment-demographics)
 - Public institutional enrollment statistics are available through [UIUC Data & Analytics for Institutional Research (DAIR)](https://dair.illinois.edu/access-data/student-enrollment/) and historical [UIUC DMI enrollment reports](https://dmi.illinois.edu/).
 
 ---
