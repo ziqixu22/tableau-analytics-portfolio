@@ -1,23 +1,24 @@
 import pandas as pd
-from llm_eval.judge import align_judgments, agreement_metrics, release_gate
+from llm_eval.judge import align_annotation_level, align_majority_level, agreement_metrics, release_gate
 
 
-def test_alignment_and_agreement():
+def test_pair_orientation_is_canonicalized():
     human = pd.DataFrame({
-        "question_id": [1,1,1,2,2,2],
-        "model_a": ["a"]*3 + ["a"]*3,
-        "model_b": ["b"]*3 + ["b"]*3,
-        "turn": [1]*3 + [1]*3,
-        "winner": ["model_a","model_a","model_b","model_b","model_b","model_b"],
+        "question_id": [1,1,1],
+        "model_a": ["b","b","b"],
+        "model_b": ["a","a","a"],
+        "turn": [1,1,1],
+        "winner": ["model_b","model_b","model_a"],
     })
     gpt = pd.DataFrame({
-        "question_id": [1,2], "model_a": ["a","a"], "model_b": ["b","b"],
-        "turn": [1,1], "winner": ["model_a","model_b"]
+        "question_id": [1], "model_a": ["a"], "model_b": ["b"],
+        "turn": [1], "winner": ["model_a"]
     })
-    aligned = align_judgments(human, gpt)
-    m = agreement_metrics(aligned)
-    assert len(aligned) == 2
-    assert m["agreement"] == 1.0
+    aligned = align_annotation_level(human, gpt)
+    assert len(aligned) == 3
+    assert agreement_metrics(aligned)["agreement"] == 2/3
+    majority = align_majority_level(human, gpt)
+    assert agreement_metrics(majority)["agreement"] == 1.0
 
 
 def test_release_gate_passes_perfect_agreement():
