@@ -2,11 +2,18 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-import pandas as pd
 from datasets import load_dataset
 
 from llm_eval.arena import preference_summary, bradley_terry_scores, position_bias, verbosity_bias
-from llm_eval.judge import align_judgments, agreement_metrics, reliability_by_turn, bootstrap_agreement_ci, release_gate
+from llm_eval.judge import (
+    align_annotation_level,
+    align_majority_level,
+    agreement_metrics,
+    agreement_without_ties,
+    reliability_by_turn,
+    bootstrap_agreement_ci,
+    release_gate,
+)
 
 OUT = Path("results")
 OUT.mkdir(exist_ok=True)
@@ -25,15 +32,20 @@ def main():
 
     human = load_dataset("lmsys/mt_bench_human_judgments", split="human").to_pandas()
     gpt4 = load_dataset("lmsys/mt_bench_human_judgments", split="gpt4_pair").to_pandas()
-    aligned = align_judgments(human, gpt4)
+
+    aligned = align_annotation_level(human, gpt4)
+    majority = align_majority_level(human, gpt4)
     judge = agreement_metrics(aligned)
+    judge_no_ties = agreement_without_ties(aligned)
+    majority_metrics = agreement_metrics(majority)
     judge["agreement_ci_95"] = list(bootstrap_agreement_ci(aligned))
     by_turn = reliability_by_turn(aligned)
     gate = release_gate(aligned)
 
     pref.to_csv(OUT / "arena_preference_summary.csv", index=False)
     bt.to_csv(OUT / "arena_bradley_terry.csv", index=False)
-    aligned.to_csv(OUT / "mtbench_aligned_judgments.csv", index=False)
+    aligned.to_csv(OUT / "mtbench_annotation_aligned.csv", index=False)
+    majority.to_csv(OUT / "mtbench_majority_aligned.csv", index=False)
 
     metrics = {
         "arena": {
@@ -47,8 +59,11 @@ def main():
         "judge_reliability": {
             "human_annotations": int(len(human)),
             "gpt4_pair_judgments": int(len(gpt4)),
-            "aligned_comparisons": int(len(aligned)),
+            "aligned_annotation_comparisons": int(len(aligned)),
+            "aligned_majority_comparisons": int(len(majority)),
             **judge,
+            "without_ties": judge_no_ties,
+            "majority_human_vs_gpt4": majority_metrics,
             "by_turn": by_turn,
             "release_gate": gate,
         },
@@ -69,39 +84,43 @@ def main():
         f"- Longer-response win rate among non-tied unequal-length responses: **{pct(verb['longer_response_win_rate'])}**" if verb['n'] else "- Verbosity analysis unavailable in source schema.",
     ]
     if top_model is not None:
-        md += [f"- Highest observed tie-adjusted win rate among included models: **{top_model['model']} ({pct(top_model['tie_adjusted_win_rate'])}, n={int(top_model['battles']):,})**"]
+        md += [f"- Highest observed tie-adjusted win rate: **{top_model['model']} ({pct(top_model['tie_adjusted_win_rate'])}, n={int(top_model['battles']):,})**"]
     if top_bt is not None:
         md += [f"- Highest Bradley-Terry score after requiring 100+ battles: **{top_bt['model']}**"]
+
     md += [
         "",
         "## LLM-as-a-Judge reliability — MT-Bench",
         "",
         f"- Expert human annotations: **{len(human):,}**",
         f"- GPT-4 pairwise judgments: **{len(gpt4):,}**",
-        f"- Aligned majority-human vs GPT-4 comparisons: **{len(aligned):,}**",
-        f"- Exact agreement: **{pct(judge['agreement'])}** (95% bootstrap CI **{pct(ci[0])}–{pct(ci[1])}**) ",
+        f"- Aligned human-annotation vs GPT-4 comparisons: **{len(aligned):,}**",
+        f"- Exact annotation-level agreement: **{pct(judge['agreement'])}** (95% bootstrap CI **{pct(ci[0])}–{pct(ci[1])}**) ",
+        f"- Agreement excluding ties: **{pct(judge_no_ties['agreement'])}**",
         f"- Cohen's kappa: **{judge['kappa']:.3f}**",
+        f"- Majority-human vs GPT-4 agreement: **{pct(majority_metrics['agreement'])}**",
         "",
         "### Reliability by conversation turn",
         "",
     ]
     for r in by_turn:
         md += [f"- Turn {r['turn']}: **{pct(r['agreement'])} agreement**, κ={r['kappa']:.3f}, n={r['n']:,}"]
+
     md += [
         "",
         "## Release decision",
         "",
         f"Automated release gate: **{'PASS' if gate['automated_release_gate'] else 'HUMAN REVIEW REQUIRED'}**",
         "",
-        "The gate requires overall and slice-level agreement/reliability thresholds. Any failing slice is routed to expert review instead of allowing the automated judge to silently approve a model release.",
+        "The gate requires agreement, chance-adjusted reliability, and minimum sample size. Failing slices are routed to expert review.",
         "",
         "## Business takeaways",
         "",
-        "1. Human preference is the product outcome; benchmark/judge scores are measurement tools, not the goal.",
-        "2. Automated judges must be validated against expert humans before being used as release gates.",
-        "3. Position and verbosity effects are measurement risks and should be audited before interpreting model rankings.",
-        "4. Reliability should be sliced by interaction complexity; aggregate agreement can hide weak subgroups.",
-        "5. A hybrid evaluation system can automate high-confidence slices while reserving uncertain or low-agreement cases for human review.",
+        "1. Human preference is the product outcome; benchmark/judge scores are measurement tools.",
+        "2. Pair orientation must be canonicalized before comparing evaluators; evaluation pipelines can create false disagreement if measurement logic is wrong.",
+        "3. Automated judges need human validation, uncertainty estimates, and slice checks before they can approve model releases.",
+        "4. Position and verbosity effects are measurement risks and should be audited before interpreting rankings.",
+        "5. Hybrid evaluation is safer than blind automation: automate trusted slices and route weak/uncertain slices to humans.",
     ]
     Path("RESULTS.md").write_text("\n".join(md))
     print(json.dumps(metrics, indent=2))
