@@ -1,12 +1,32 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
-from typing import Iterable
 import numpy as np
 import pandas as pd
 from sklearn.metrics import cohen_kappa_score
 
 KEYS = ["question_id", "model_a", "model_b", "turn"]
+
+
+def _revert(winner: str) -> str:
+    if winner == "model_a":
+        return "model_b"
+    if winner == "model_b":
+        return "model_a"
+    return winner
+
+
+def canonicalize_pairs(df: pd.DataFrame) -> pd.DataFrame:
+    required = set(KEYS + ["winner"])
+    missing = required - set(df.columns)
+    if missing:
+        raise ValueError(f"missing columns: {sorted(missing)}")
+    rows = []
+    for r in df[KEYS + ["winner"]].itertuples(index=False):
+        if r.model_a <= r.model_b:
+            rows.append((r.question_id, r.model_a, r.model_b, r.turn, r.winner))
+        else:
+            rows.append((r.question_id, r.model_b, r.model_a, r.turn, _revert(r.winner)))
+    return pd.DataFrame(rows, columns=KEYS + ["winner"])
 
 
 def _majority_winner(group: pd.Series) -> str:
@@ -18,28 +38,18 @@ def _majority_winner(group: pd.Series) -> str:
     return str(counts.index[0])
 
 
-def aggregate_human_majority(human: pd.DataFrame) -> pd.DataFrame:
-    required = set(KEYS + ["winner"])
-    missing = required - set(human.columns)
-    if missing:
-        raise ValueError(f"missing columns: {sorted(missing)}")
-    return (
-        human.groupby(KEYS, dropna=False)["winner"]
-        .agg(_majority_winner)
-        .reset_index(name="human_winner")
-    )
+def align_annotation_level(human: pd.DataFrame, gpt4: pd.DataFrame) -> pd.DataFrame:
+    """Replicate the official MT-Bench idea: compare the one GPT-4 vote with every human vote for the same canonical pair."""
+    h = canonicalize_pairs(human).rename(columns={"winner": "human_winner"})
+    g = canonicalize_pairs(gpt4).drop_duplicates(KEYS).rename(columns={"winner": "gpt4_winner"})
+    return h.merge(g, on=KEYS, how="inner")
 
 
-def prepare_gpt4(gpt4: pd.DataFrame) -> pd.DataFrame:
-    required = set(KEYS + ["winner"])
-    missing = required - set(gpt4.columns)
-    if missing:
-        raise ValueError(f"missing columns: {sorted(missing)}")
-    return gpt4[KEYS + ["winner"]].rename(columns={"winner": "gpt4_winner"})
-
-
-def align_judgments(human: pd.DataFrame, gpt4: pd.DataFrame) -> pd.DataFrame:
-    return aggregate_human_majority(human).merge(prepare_gpt4(gpt4), on=KEYS, how="inner")
+def align_majority_level(human: pd.DataFrame, gpt4: pd.DataFrame) -> pd.DataFrame:
+    h = canonicalize_pairs(human)
+    h = h.groupby(KEYS, dropna=False)["winner"].agg(_majority_winner).reset_index(name="human_winner")
+    g = canonicalize_pairs(gpt4).drop_duplicates(KEYS).rename(columns={"winner": "gpt4_winner"})
+    return h.merge(g, on=KEYS, how="inner")
 
 
 def agreement_metrics(aligned: pd.DataFrame) -> dict:
@@ -55,23 +65,21 @@ def agreement_metrics(aligned: pd.DataFrame) -> dict:
 
 
 def reliability_by_turn(aligned: pd.DataFrame) -> list[dict]:
-    rows = []
-    for turn, g in aligned.groupby("turn"):
-        rows.append({"turn": int(turn), **agreement_metrics(g)})
-    return rows
+    return [{"turn": int(turn), **agreement_metrics(g)} for turn, g in aligned.groupby("turn")]
 
 
 def bootstrap_agreement_ci(aligned: pd.DataFrame, n_boot: int = 2000, seed: int = 42) -> tuple[float, float]:
     if aligned.empty:
         return float("nan"), float("nan")
     rng = np.random.default_rng(seed)
-    vals = []
-    n = len(aligned)
     eq = (aligned["human_winner"].astype(str).to_numpy() == aligned["gpt4_winner"].astype(str).to_numpy()).astype(float)
-    for _ in range(n_boot):
-        idx = rng.integers(0, n, n)
-        vals.append(eq[idx].mean())
+    vals = [eq[rng.integers(0, len(eq), len(eq))].mean() for _ in range(n_boot)]
     return float(np.quantile(vals, 0.025)), float(np.quantile(vals, 0.975))
+
+
+def agreement_without_ties(aligned: pd.DataFrame) -> dict:
+    d = aligned[(aligned["human_winner"] != "tie") & (aligned["gpt4_winner"] != "tie")]
+    return agreement_metrics(d)
 
 
 def release_gate(aligned: pd.DataFrame, min_agreement: float = 0.80, min_kappa: float = 0.60, min_n: int = 100) -> dict:
